@@ -19,23 +19,38 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend"
+	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/test"
 )
+
+type TestPoseidonCircuit struct {
+	Left  frontend.Variable `gnark:"left"`
+	Right frontend.Variable `gnark:"right"`
+	Hash  frontend.Variable `gnark:",public"`
+}
+
+// Define declares the circuit constraints
+func (circuit *TestPoseidonCircuit) Define(api frontend.API) error {
+	poseidon := NewPoseidon(api)
+	poseidon.Write(circuit.Left, circuit.Right)
+	api.AssertIsEqual(circuit.Hash, poseidon.Sum())
+	return nil
+}
 
 func TestPoseidon(t *testing.T) {
 	assert := test.NewAssert(t)
 
-	var cubicCircuit PoseidonCircuit
+	var cubicCircuit TestPoseidonCircuit
 
-	assert.ProverSucceeded(&cubicCircuit, &PoseidonCircuit{
+	assert.ProverSucceeded(&cubicCircuit, &TestPoseidonCircuit{
 		Left:  0,
 		Right: 0,
-		Out:   hex("0x2098f5fb9e239eab3ceac3f27b81e481dc3124d55ffed523a839ee8446b64864"),
+		Hash:  hex("0x2098f5fb9e239eab3ceac3f27b81e481dc3124d55ffed523a839ee8446b64864"),
 	}, test.WithBackends(backend.GROTH16), test.WithCurves(ecc.BN254))
 
-	assert.ProverSucceeded(&cubicCircuit, &PoseidonCircuit{
+	assert.ProverSucceeded(&cubicCircuit, &TestPoseidonCircuit{
 		Left:  31213,
 		Right: 132,
-		Out:   hex("0x303f59cd0831b5633bcda50514521b33776b5d4280eb5868ba1dbbe2e4d76ab5"),
+		Hash:  hex("0x303f59cd0831b5633bcda50514521b33776b5d4280eb5868ba1dbbe2e4d76ab5"),
 	}, test.WithBackends(backend.GROTH16), test.WithCurves(ecc.BN254))
 }
