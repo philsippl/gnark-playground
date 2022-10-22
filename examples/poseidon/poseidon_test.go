@@ -32,4 +32,10 @@ func TestPoseidon(t *testing.T) {
 		Right: 0,
 		Out:   hex("0x2098f5fb9e239eab3ceac3f27b81e481dc3124d55ffed523a839ee8446b64864"),
 	}, test.WithBackends(backend.GROTH16), test.WithCurves(ecc.BN254))
+
+	assert.ProverSucceeded(&cubicCircuit, &PoseidonCircuit{
+		Left:  31213,
+		Right: 132,
+		Out:   hex("0x303f59cd0831b5633bcda50514521b33776b5d4280eb5868ba1dbbe2e4d76ab5"),
+	}, test.WithBackends(backend.GROTH16), test.WithCurves(ecc.BN254))
 }
