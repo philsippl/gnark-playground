@@ -43,6 +43,7 @@ func VerifyProof(api frontend.API, h poseidon.Poseidon, proofSet, helper []front
 func nodeSum(api frontend.API, h poseidon.Poseidon, a, b frontend.Variable) frontend.Variable {
 	h.Write(a, b)
 	res := h.Sum()
+	h.Reset()
 	return res
 }
 
@@ -50,19 +51,18 @@ func (circuit *Circuit) Define(api frontend.API) error {
 	var root frontend.Variable
 	h := poseidon.NewPoseidon2(api)
 
-	// pre-proof
-	root = VerifyProof(api, h, append([]frontend.Variable{emptyLeaf}, circuit.MerkleProofs[0][:]...), api.ToBinary(0, depth))
+	// Empty proof for start.
+	root = VerifyProof(api, h, append([]frontend.Variable{emptyLeaf}, circuit.MerkleProofs[0][:]...), api.ToBinary(circuit.StartIndex, depth))
 	api.AssertIsEqual(root, circuit.PreRoot)
 
-	// insertion proofs
+	// Individual insertions.
 	for i := 0; i < batchSize; i += 1 {
 		currentIndex := api.Add(circuit.StartIndex, i)
-		path := api.ToBinary(currentIndex, depth)
-		leaf := circuit.IdComms[i]
-		mproof := append([]frontend.Variable{leaf}, circuit.MerkleProofs[i][:]...)
-
-		root = VerifyProof(api, h, mproof, path)
+		merkleProof := append([]frontend.Variable{circuit.IdComms[i]}, circuit.MerkleProofs[i][:]...)
+		root = VerifyProof(api, h, merkleProof, api.ToBinary(currentIndex, depth))
 	}
+
+	// Final root needs to match.
 	api.AssertIsEqual(root, circuit.PostRoot)
 
 	return nil
